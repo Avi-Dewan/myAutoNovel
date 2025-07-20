@@ -246,15 +246,19 @@ if __name__ == "__main__":
     print('Evaluating on Head1')
     args.head = 'head1'
     print('test on labeled classes (test split)')
-    test(model, labeled_eval_loader, args, tsne=True, tsneplotName='Labeled')
+    test(model, labeled_eval_loader, args)
+
     if args.IL:
         print('test on unlabeled classes (test split)')
         test(model, unlabeled_eval_loader_test, args)
         print('test on all classes (test split)')
         test(model, all_eval_loader, args)
+
     print('Evaluating on Head2')
     args.head = 'head2'
+
     print('test on unlabeled classes (train split)')
-    test(model, unlabeled_eval_loader, args, tsne=True, tsneplotName='UnLabeled')
+    test(model, unlabeled_eval_loader, args)
+
     print('test on unlabeled classes (test split)')
-    test(model, unlabeled_eval_loader_test, args, tsne=True, tsneplotName='UnLabeled_test')
+    test(model, unlabeled_eval_loader_test, args)
