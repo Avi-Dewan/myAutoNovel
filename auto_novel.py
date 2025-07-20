@@ -56,10 +56,9 @@ def train(model, train_loader, labeled_eval_loader, unlabeled_eval_loader, args)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
         print('Train Epoch: {} Avg Loss: {:.4f}'.format(epoch, loss_record.avg))
-        print('test on labeled classes')
-        args.head = 'head1'
-        test(model, labeled_eval_loader, args)
+        
         print('test on unlabeled classes')
         args.head='head2'
         test(model, unlabeled_eval_loader, args)
@@ -235,6 +234,7 @@ if __name__ == "__main__":
             train_IL(model, mix_train_loader, labeled_eval_loader, unlabeled_eval_loader, args)
         else:
             train(model, mix_train_loader, labeled_eval_loader, unlabeled_eval_loader, args)
+
         torch.save(model.state_dict(), args.model_dir)
         print("model saved to {}.".format(args.model_dir))
     else:
