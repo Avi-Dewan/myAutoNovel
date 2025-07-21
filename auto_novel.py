@@ -179,13 +179,15 @@ if __name__ == "__main__":
     parser.add_argument('--dataset_name', type=str, default='cifar10', help='options: cifar10, cifar100, svhn')
     parser.add_argument('--seed', default=1, type=int)
     parser.add_argument('--mode', type=str, default='train')
+
+    parser.add_argument("--imbalance_config", type=str, default=None, help="Class imbalance configuration (e.g., [{'class': 9, 'percentage': 20}, {'class': 7, 'percentage': 5}])")
+
     args = parser.parse_args()
     args.cuda = torch.cuda.is_available()
     device = torch.device("cuda" if args.cuda else "cpu")
     seed_torch(args.seed)
 
 
-    parser.add_argument("--imbalance_config", type=str, default=None, help="Class imbalance configuration (e.g., [{'class': 9, 'percentage': 20}, {'class': 7, 'percentage': 5}])")
 
 
     runner_name = os.path.basename(__file__).split(".")[0]
