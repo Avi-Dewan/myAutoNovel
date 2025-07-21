@@ -359,17 +359,33 @@ def CIFAR100Data(root, split='train', aug=None, target_list=range(80)):
     dataset = CIFAR100(root=root, split=split, transform=transform, target_list=target_list)
     return dataset
 
-def CIFAR100Loader(root, batch_size, split='train', num_workers=2,  aug=None, shuffle=True, target_list=range(80)):
+def CIFAR100Loader(root, batch_size, split='train', num_workers=2,  aug=None, shuffle=True, target_list=range(80),  imbalance_config=None):
     dataset = CIFAR100Data(root, split, aug,target_list)
+    
+
+    if imbalance_config is not None:
+        imbalance_config = ast.literal_eval(imbalance_config)
+        apply_class_imbalance(dataset, imbalance_config)
+
+    print("In CIFAR-100 loader")
+    print_class_distribution(dataset, name=f"CIFAR100-{split}")
+
     loader = data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
     return loader
 
-def CIFAR100LoaderMix(root, batch_size, split='train',num_workers=2, aug=None, shuffle=True, labeled_list=range(80), unlabeled_list=range(90, 100)):
+def CIFAR100LoaderMix(root, batch_size, split='train',num_workers=2, aug=None, shuffle=True, labeled_list=range(80), unlabeled_list=range(90, 100), imbalance_config=None):
     dataset_labeled = CIFAR100Data(root, split, aug, labeled_list)
     dataset_unlabeled = CIFAR100Data(root, split, aug, unlabeled_list)
 
     dataset_labeled.targets = np.concatenate((dataset_labeled.targets,dataset_unlabeled.targets))
     dataset_labeled.data = np.concatenate((dataset_labeled.data,dataset_unlabeled.data),0)
+
+    if imbalance_config is not None:
+        imbalance_config = ast.literal_eval(imbalance_config)
+        apply_class_imbalance(dataset_unlabeled, imbalance_config)
+
+    print("In CIFAR-100 Mixed loader")
+    print_class_distribution(dataset_unlabeled, name=f"CIFAR100-{split}-unlabeled")
 
     loader = data.DataLoader(dataset_labeled, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
     return loader
