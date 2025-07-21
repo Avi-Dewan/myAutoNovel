@@ -17,6 +17,48 @@ from .utils import TransformTwice, TransformKtimes, RandomTranslateWithReflect, 
 from .concat import ConcatDataset
 import torchvision.transforms as transforms
 
+
+# Imbalance config
+from collections import defaultdict
+import ast
+
+def apply_class_imbalance(dataset, imbalance_config, seed=42):
+    """
+    Applies class imbalance by removing a percentage of samples from specified classes.
+    """
+    random.seed(seed)
+    targets = np.array(dataset.targets)
+    indices_to_remove = []
+
+    for imbalance in imbalance_config:
+        target_class = imbalance['class']
+        remove_percentage = imbalance['percentage'] / 100
+        class_indices = np.where(targets == target_class)[0]
+        num_to_remove = int(len(class_indices) * remove_percentage)
+        samples_to_remove = random.sample(list(class_indices), num_to_remove)
+        indices_to_remove.extend(samples_to_remove)
+
+    indices_to_remove = set(indices_to_remove)
+    dataset.data = np.delete(dataset.data, list(indices_to_remove), axis=0)
+    dataset.targets = np.delete(dataset.targets, list(indices_to_remove), axis=0)
+
+def print_class_distribution(dataset, name="Dataset"):
+    """
+    Prints the number of samples in each class.
+    Works with both Dataset and torch.utils.data.Subset.
+    """
+    if isinstance(dataset, torch.utils.data.Subset):
+        targets = np.array([dataset.dataset.targets[i] for i in dataset.indices])
+    else:
+        targets = np.array(dataset.targets)
+
+    unique, counts = np.unique(targets, return_counts=True)
+    print(f"\nClass-wise distribution of {name}:")
+    for cls, count in zip(unique, counts):
+        print(f"  Class {cls}: {count} samples")
+    print("\n")
+
+
 class CIFAR10(data.Dataset):
     """`CIFAR10 <https://www.cs.toronto.edu/~kriz/cifar.html>`_ Dataset.
 
@@ -229,12 +271,22 @@ def CIFAR10Data(root, split='train', aug=None, target_list=range(5)):
     dataset = CIFAR10(root=root, split=split, transform=transform, target_list=target_list)
     return dataset
 
-def CIFAR10Loader(root, batch_size, split='train', num_workers=2,  aug=None, shuffle=True, target_list=range(5)):
+def CIFAR10Loader(root, batch_size, split='train', num_workers=2,  aug=None, shuffle=True, target_list=range(5), imbalance_config=None):
+
     dataset = CIFAR10Data(root, split, aug,target_list)
+
+    if imbalance_config is not None:
+        imbalance_config = ast.literal_eval(imbalance_config)
+        apply_class_imbalance(dataset, imbalance_config)
+
+    print("In CIFAR-10 loader")
+    print_class_distribution(dataset, name=f"CIFAR10-{split}")
+
     loader = data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
     return loader
 
-def CIFAR10LoaderMix(root, batch_size, split='train',num_workers=2, aug=None, shuffle=True, labeled_list=range(5), unlabeled_list=range(5, 10), new_labels=None):
+def CIFAR10LoaderMix(root, batch_size, split='train',num_workers=2, aug=None, shuffle=True, labeled_list=range(5), unlabeled_list=range(5, 10), new_labels=None, imbalance_config=None):
+
     if aug==None:
         transform = transforms.Compose([
             transforms.ToTensor(),
@@ -256,6 +308,14 @@ def CIFAR10LoaderMix(root, batch_size, split='train',num_workers=2, aug=None, sh
         ]))
     dataset_labeled = CIFAR10(root=root, split=split, transform=transform, target_list=labeled_list)
     dataset_unlabeled = CIFAR10(root=root, split=split, transform=transform, target_list=unlabeled_list)
+
+    if imbalance_config is not None:
+        imbalance_config = ast.literal_eval(imbalance_config)
+        apply_class_imbalance(dataset_unlabeled, imbalance_config)
+
+    print("In CIFAR-10 Mixed loader")
+    print_class_distribution(dataset_unlabeled, name=f"CIFAR10-{split}-unlabeled")
+
     if new_labels is not None:
         dataset_unlabeled.targets = new_labels
     dataset_labeled.targets = np.concatenate((dataset_labeled.targets,dataset_unlabeled.targets))
@@ -307,8 +367,10 @@ def CIFAR100Loader(root, batch_size, split='train', num_workers=2,  aug=None, sh
 def CIFAR100LoaderMix(root, batch_size, split='train',num_workers=2, aug=None, shuffle=True, labeled_list=range(80), unlabeled_list=range(90, 100)):
     dataset_labeled = CIFAR100Data(root, split, aug, labeled_list)
     dataset_unlabeled = CIFAR100Data(root, split, aug, unlabeled_list)
+
     dataset_labeled.targets = np.concatenate((dataset_labeled.targets,dataset_unlabeled.targets))
     dataset_labeled.data = np.concatenate((dataset_labeled.data,dataset_unlabeled.data),0)
+
     loader = data.DataLoader(dataset_labeled, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers)
     return loader
 

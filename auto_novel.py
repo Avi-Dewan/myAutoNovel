@@ -59,7 +59,7 @@ def train(model, train_loader, labeled_eval_loader, unlabeled_eval_loader, args)
 
         print('Train Epoch: {} Avg Loss: {:.4f}'.format(epoch, loss_record.avg))
         
-        print('test on unlabeled classes')
+        print('test on unlabeled classes(test)')
         args.head='head2'
         test(model, unlabeled_eval_loader, args)
 
@@ -183,6 +183,11 @@ if __name__ == "__main__":
     args.cuda = torch.cuda.is_available()
     device = torch.device("cuda" if args.cuda else "cpu")
     seed_torch(args.seed)
+
+
+    parser.add_argument("--imbalance_config", type=str, default=None, help="Class imbalance configuration (e.g., [{'class': 9, 'percentage': 20}, {'class': 7, 'percentage': 5}])")
+
+
     runner_name = os.path.basename(__file__).split(".")[0]
     model_dir= os.path.join(args.exp_root, runner_name)
     if not os.path.exists(model_dir):
@@ -202,9 +207,9 @@ if __name__ == "__main__":
                 param.requires_grad = False
  
     if args.dataset_name == 'cifar10':
-        mix_train_loader = CIFAR10LoaderMix(root=args.dataset_root, batch_size=args.batch_size, split='train', aug='twice', shuffle=True, labeled_list=range(args.num_labeled_classes), unlabeled_list=range(args.num_labeled_classes, num_classes))
+        mix_train_loader = CIFAR10LoaderMix(root=args.dataset_root, batch_size=args.batch_size, split='train', aug='twice', shuffle=True, labeled_list=range(args.num_labeled_classes), unlabeled_list=range(args.num_labeled_classes, num_classes), imbalance_config=args.imbalance_config)
         labeled_train_loader = CIFAR10Loader(root=args.dataset_root, batch_size=args.batch_size, split='train', aug='once', shuffle=True, target_list = range(args.num_labeled_classes))
-        unlabeled_eval_loader = CIFAR10Loader(root=args.dataset_root, batch_size=args.batch_size, split='train', aug=None, shuffle=False, target_list = range(args.num_labeled_classes, num_classes))
+        unlabeled_eval_loader = CIFAR10Loader(root=args.dataset_root, batch_size=args.batch_size, split='train', aug=None, shuffle=False, target_list = range(args.num_labeled_classes, num_classes), imbalance_config=args.imbalance_config)
         unlabeled_eval_loader_test = CIFAR10Loader(root=args.dataset_root, batch_size=args.batch_size, split='test', aug=None, shuffle=False, target_list = range(args.num_labeled_classes, num_classes))
         labeled_eval_loader = CIFAR10Loader(root=args.dataset_root, batch_size=args.batch_size, split='test', aug=None, shuffle=False, target_list = range(args.num_labeled_classes))
         all_eval_loader = CIFAR10Loader(root=args.dataset_root, batch_size=args.batch_size, split='test', aug=None, shuffle=False, target_list = range(num_classes))
